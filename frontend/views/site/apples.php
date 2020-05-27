@@ -31,7 +31,7 @@
             <td><?=$apple->state()?></td>
             <td>
                 <button onclick="location.href = 'fall/<?=$apple->id?>'" class="btn-success">Уронить</button>
-                <button onclick="location.href = 'eat/<?=$apple->id?>/' + document.getElementById('apple_input_<?=$apple->id?>').value"
+                <button onclick="eat(<?=$apple->id?>)"
                         class="btn-success">Откусить %</button>
                 <input  id="apple_input_<?=$apple->id?>" type="number" pattern="\d+" step="1" min="0" max="100"
                         onkeypress="return event.charCode >= 48 && event.charCode <= 57"/>
@@ -46,4 +46,12 @@
     </div>
 <?endif;?>
 <button class="btn-danger" onclick="location.href = 'generate'">Посадить заново</button>
+<script>
+    function eat(appleId) {
+        let part = document.getElementById('apple_input_' + appleId).value;
+        if (part.length) {
+            location.href = 'eat/' + appleId + '/' + part;
+        }
+    }
+</script>
 
