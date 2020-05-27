@@ -27,7 +27,7 @@
     <?php foreach ($apples as $apple):?>
         <tr>
             <td><?=$apple->id?></td>
-            <td><img src="<?=$apple->getUrl()?>" style="width: 20px;height: 20px;opacity: <?=$apple->getOpacity() ?>"></td>
+            <td><img title="Остаток: <?=$apple->remain?>%" src="<?=$apple->getUrl()?>" style="width: 20px;height: 20px;opacity: <?=$apple->getOpacity() ?>"></td>
             <td><?=$apple->state()?></td>
             <td>
                 <button onclick="location.href = 'fall/<?=$apple->id?>'" class="btn-success">Уронить</button>
