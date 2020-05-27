@@ -1,6 +1,8 @@
 <?php
 namespace frontend\controllers;
 
+use common\exceptions\AppleException;
+use common\models\Apple;
 use frontend\models\ResendVerificationEmailForm;
 use frontend\models\VerifyEmailForm;
 use Yii;
@@ -12,8 +14,6 @@ use yii\filters\AccessControl;
 use common\models\LoginForm;
 use frontend\models\PasswordResetRequestForm;
 use frontend\models\ResetPasswordForm;
-use frontend\models\SignupForm;
-use frontend\models\ContactForm;
 
 /**
  * Site controller
@@ -28,15 +28,30 @@ class SiteController extends Controller
         return [
             'access' => [
                 'class' => AccessControl::className(),
-                'only' => ['logout', 'signup'],
+                'only' => ['logout', 'signup', 'apples', 'eat', 'fall', 'generate'],
                 'rules' => [
                     [
-                        'actions' => ['signup'],
+                        'actions' => ['logout'],
                         'allow' => true,
-                        'roles' => ['?'],
+                        'roles' => ['@'],
                     ],
                     [
-                        'actions' => ['logout'],
+                        'actions' => ['apples'],
+                        'allow' => true,
+                        'roles' => ['@'],
+                    ],
+                    [
+                        'actions' => ['eat'],
+                        'allow' => true,
+                        'roles' => ['@'],
+                    ],
+                    [
+                        'actions' => ['fall'],
+                        'allow' => true,
+                        'roles' => ['@'],
+                    ],
+                    [
+                        'actions' => ['generate'],
                         'allow' => true,
                         'roles' => ['@'],
                     ],
@@ -74,7 +89,7 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-        return $this->render('index');
+        $this->redirect('/site/apples');
     }
 
     /**
@@ -110,57 +125,6 @@ class SiteController extends Controller
         Yii::$app->user->logout();
 
         return $this->goHome();
-    }
-
-    /**
-     * Displays contact page.
-     *
-     * @return mixed
-     */
-    public function actionContact()
-    {
-        $model = new ContactForm();
-        if ($model->load(Yii::$app->request->post()) && $model->validate()) {
-            if ($model->sendEmail(Yii::$app->params['adminEmail'])) {
-                Yii::$app->session->setFlash('success', 'Thank you for contacting us. We will respond to you as soon as possible.');
-            } else {
-                Yii::$app->session->setFlash('error', 'There was an error sending your message.');
-            }
-
-            return $this->refresh();
-        } else {
-            return $this->render('contact', [
-                'model' => $model,
-            ]);
-        }
-    }
-
-    /**
-     * Displays about page.
-     *
-     * @return mixed
-     */
-    public function actionAbout()
-    {
-        return $this->render('about');
-    }
-
-    /**
-     * Signs user up.
-     *
-     * @return mixed
-     */
-    public function actionSignup()
-    {
-        $model = new SignupForm();
-        if ($model->load(Yii::$app->request->post()) && $model->signup()) {
-            Yii::$app->session->setFlash('success', 'Thank you for registration. Please check your inbox for verification email.');
-            return $this->goHome();
-        }
-
-        return $this->render('signup', [
-            'model' => $model,
-        ]);
     }
 
     /**
@@ -256,5 +220,92 @@ class SiteController extends Controller
         return $this->render('resendVerificationEmail', [
             'model' => $model
         ]);
+    }
+
+    /**
+     * @return string
+     */
+    public function actionApples()
+    {
+        return $this->render('apples', [
+            'apples' => Apple::find()->all()
+        ]);
+    }
+
+    public function actionGenerate()
+    {
+        try {
+
+            $count = rand(5, 20);
+            $colors = [Apple::COLOR_GREEN, Apple::COLOR_RED, Apple::COLOR_YELLOW];
+
+            Apple::deleteAll();
+
+            for ($i = 0; $i < $count; $i++) {
+                $apple = new Apple;
+                $apple->color = $colors[array_rand($colors)];
+                $apple->created_at = date('Y-m-d H:i:s');
+                if (!$apple->save()) {
+                    throw new AppleException('Не удалсоь создать яблоки');
+                }
+            }
+
+        } catch (AppleException $exception) {
+
+            Yii::$app->session->setFlash('appleError', $exception->getMessage());
+
+        }
+
+        $this->redirect('/site/apples');
+    }
+
+    /**
+     * @param int $appleId
+     * @param float $part
+     * @throws \yii\db\StaleObjectException
+     * @throws \Throwable
+     */
+    public function actionEat(int $appleId, float $part)
+    {
+        try {
+
+            $apple = Apple::findOne($appleId);
+
+            if (!$apple) {
+                throw new AppleException('Не удалось найти яблоко с номером ' . $appleId);
+            }
+
+            $apple->eat($part);
+
+        } catch (AppleException $exception) {
+
+            Yii::$app->session->setFlash('appleError', $exception->getMessage());
+
+        }
+
+        $this->redirect('/site/apples');
+    }
+
+    /**
+     * @param int $appleId
+     */
+    public function actionFall(int $appleId)
+    {
+        try {
+            $apple = Apple::findOne($appleId);
+
+            if (!$apple) {
+                throw new AppleException('Не удалось найти яблоко с номером ' . $appleId);
+            }
+
+            $apple->fallToGround();
+
+        } catch (AppleException $exception) {
+
+            Yii::$app->session->setFlash('appleError', $exception->getMessage());
+
+        }
+
+        $this->redirect('/site/apples');
     }
 }
